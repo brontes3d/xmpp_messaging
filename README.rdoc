@@ -1,0 +1,93 @@
+=XmppMessaging
+
+This plugin introduces XmppMessaging::Listener as the main thing you should use for interacting with an XMPP Server.
+
+XmppMessaging uses xmpp4r[http://home.gna.org/xmpp4r/rdoc/] as the base for messaging. The major facility provided that is not available through xmpp4r is automatic reconnection and failover when and if the connection to the server is lost.
+
+You should define the specifics of which XMPP Server and how to connect to it etc in a <tt>xmpp.yml</tt> file in your Rails config directory.
+
+If your rails app wants to send messages, it should create a listener that is a subclass of XmppMessaging::Listener and which sets <tt>self.config[:send_only] = true</tt> during <tt>initiailize</tt>.
+
+======Example:
+
+	class SendOnlyListener < XmppMessaging::Listener
+	  listen_as 'app'
+  
+	  def initialize
+	    self.config[:send_only] = true
+	  end
+	end
+
+	message = XmppMessaging::MessageToSend.new
+	message.listener = SendOnlyListener.new
+	message.to = "app@localhost"
+	message.body = "Here's a message"
+	message.send
+
+You can also use XmppMessaging::Listener to write a daemon that runs as a supplement to your rails app (loading your rails models etc), in a way similar to ActiveMessaging[http://code.google.com/p/activemessaging]. In such cases, you should subclass XmppMessaging::Listener with a class that defines what JID to +listen_as+ (as defined in your xmpp.yml config).  You also need to define +on_message+ to handle such messages.  To start your listener (once you've demonized and loaded your models), call: +start+ on an instance of such a subclass class.
+
+======Example:
+
+	class ApplicationListener < XmppMessaging::Listener
+	  listen_as 'app'
+
+	  def on_message(message)
+		reply = XmppMessaging::MessageToSend.new
+		message.listener = self
+	    message.to = message.from
+	    message.body = "I got your message"
+	    message.send
+	  end
+	end
+
+===Config Options
+
+[debug]   	If set to true all of xmpp4r debugging is tuned on (plus a little extra stuff from XmppMessaging).
+[servers]   Specify the set of messaging servers to choose from when attempting to connect (by ip or hostname). Giving more than one server means that if a given listener looses it's connection it will try the next server, and then the next, and then loop around and try the first again etc...
+[hostname]  Specify the hostname to use when connecting (The thing after the @ sign in your JID).
+[port]  	The port to connect to server on.
+[presence_message]  	The presence message to send when you come online.  If you are set the +send_only+ config to true, no presence message will be sent
+[resend_presence_on_recieve]	In the specific Brontes Scenario where we want listeners to only process one message at a time, we use presence message as the 'Ack'. So setting this to true means we send the presence message again after all other message handling code has completed execution.
+[users]		This is supposed to be a hash of 'named users' (as in those you specify with +listen_as), and then their login and passwords for connecting to the messaging servers. The logins will be auto-appended with the appropriate @hostname if none is given.
+
+======Example:
+
+	development:
+	    debug: true
+	    servers: ['localhost']
+	    hostname: localhost
+	    port: 5222
+	    presence_message: "one message at a time"
+	    resend_presence_on_recieve: true
+	    users:
+	        app:
+	          login: app
+	          password: test
+
+	production:
+	    debug: false
+	    servers: ['production.com', 'production.com', '123.12.43.28']
+	    hostname: production.com
+	    port: 5222
+	    presence_message: "one message at a time"
+	    resend_presence_on_recieve: true
+	    users:
+	        app:
+	          login: app
+	          password: "something a bit more secure"
+	
+===Testing
+
+When writing tests, setting the global constant MOCK_OUT_JABBER_SERVER to true, means the connection to an actual jabber server won't happen, but most of XmppMessaging's facilities will still 'appear' to work. (Assuming your tests are just sending messages to themselves)
+
+===Notes
+
+We class_eval a few things on xmpp4r, primarily so we can have access to some things like the +socket+ and +parser_thread+ that are not exposed by xmpp4r.  We also change the REXML::Parsers::SAX2Parser to throw a XmppMessaging::ServerDisconnected exception so that we know when a connection has been lost and needs to be reset.
+
+
+
+
+
+Copyright (c) 2008-2010 3M. All rights reserved. Released under the MIT license.
+
+Authored by Jacob Burkhart.

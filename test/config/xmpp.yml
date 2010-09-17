@@ -1,0 +1,47 @@
+test:
+    debug: false
+    servers: ['127.0.0.1']
+    hostname: localhost
+    port: 5222
+    presence_message: "one message at a time"
+    resend_presence_on_recieve: true
+    max_retry: 20
+    retry_sleep: 2
+    users:
+        app1:
+          login: app1
+          password: test
+        app2:
+          login: app2
+          password: test
+
+# development:
+#     debug: false
+#     servers: ['localhost']
+#     hostname: localhost
+#     port: 5222
+#     presence_message: "one message at a time"
+#     resend_presence_on_recieve: true
+#     users:
+#       app1:
+#         login: app1
+#         password: test
+#       app2:
+#         login: app2
+#         password: test
+# 
+# integration:
+#     debug: false
+#     servers: ['lex-ea-cm4-int-0.mmm.com']
+#     hostname: lex-ea-cm4-int-0.mmm.com
+#     port: 5222
+#     presence_message: "one message at a time"
+#     resend_presence_on_recieve: true
+# 
+# production:
+#     debug: false
+#     servers: ['lex-ea-cm4-int-0.mmm.com']
+#     hostname: lex-ea-cm4-int-0.mmm.com
+#     port: 5222
+#     presence_message: "one message at a time"
+#     resend_presence_on_recieve: true
